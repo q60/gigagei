@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use owo_colors::OwoColorize;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -7,11 +8,6 @@ struct Quote {
     quote_text: String,
     quote_author: String,
 }
-
-const YELLOW: &str = "\x1B[93m";
-const BLUE: &str = "\x1B[94m";
-const BOLD: &str = "\x1B[1m";
-const RESET: &str = "\x1B[0m";
 
 fn main() -> Result<()> {
     let uri = "https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang=en";
@@ -22,10 +18,10 @@ fn main() -> Result<()> {
     let text = textwrap::fill(quote.quote_text.trim(), 60);
     let author = quote.quote_author.trim();
 
-    println!("\"{BLUE}{BOLD}{text}{RESET}\"");
+    println!("\"{}\"", text.bright_blue().bold());
 
     if !author.is_empty() {
-        println!("{YELLOW}{author}{RESET}");
+        println!("{}", author.bright_yellow());
     }
 
     Ok(())

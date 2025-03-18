@@ -82,6 +82,7 @@ name = "gigagei"
 version = "0.1.2"
 dependencies = [
  "anyhow",
+ "owo-colors",
  "serde",
  "serde_json",
  "textwrap",
@@ -143,6 +144,12 @@ name = "once_cell"
 version = "1.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d75b0bedcc4fe52caa0e03d9f1151a323e4aa5e2d78ba3580400cd3c9e2bc4bc"
+
+[[package]]
+name = "owo-colors"
+version = "4.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1036865bb9422d3300cf723f657c2851d0e9ab12567854b1f4eba3d77decf564"
 
 [[package]]
 name = "percent-encoding"
