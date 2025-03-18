@@ -1,11 +1,13 @@
 [package]
 name = "gigagei"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ureq = { version = "*", features = ["tls"] }
-xmlparser = "*"
-textwrap = "*"
+ureq = "3.0.10"
+serde = { version = "1.0.219", features = ["derive"] }
+textwrap = "0.16.2"
+anyhow = "1.0.97"
+serde_json = "1.0.140"
