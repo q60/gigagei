@@ -6,7 +6,6 @@ TARGET = target/release/gigagei
 all: build test
 
 build:
-	cargo update
 	cargo build --release
 
 test:
@@ -14,7 +13,7 @@ test:
 
 install:
 	install -Dm755 "$(TARGET)" "$(DESTDIR)/usr/bin/$(NAME)"
-	install -Dm644 "LICENSE" "$(DESTDIR)/usr/share/licenses/$(NAME)/LICENSE"
+	install -Dm644 "license" "$(DESTDIR)/usr/share/licenses/$(NAME)/license"
 
 uninstall:
 	rm -rfv "$(DESTDIR)/usr/bin/$(NAME)" "$(DESTDIR)/usr/share/licenses/$(NAME)"
