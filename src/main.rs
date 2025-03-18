@@ -6,11 +6,11 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-/// quote structure
+/// Quote structure
 struct Quote {
-    /// quote text
+    /// Quote text
     quote_text: String,
-    /// quote author, may be absent
+    /// Quote author, may be absent
     quote_author: String,
 }
 
@@ -32,7 +32,11 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// performs GET request using [ureq] and possibly returns body as a [String].
+/// Performs a GET request using [`ureq`] and returns the body as a [String].
+///
+/// # Errors
+///
+/// Returns an error if the GET request fails or if the body cannot be parsed to a UTF-8 string.
 fn get_request(uri: &str) -> Result<String> {
     let mut response = ureq::get(uri).call().context("request error")?;
     let string = response
@@ -43,9 +47,15 @@ fn get_request(uri: &str) -> Result<String> {
     Ok(string)
 }
 
-/// possibly serializes `response` (JSON string) into [Quote].
+/// Deserializes a JSON representation of a [`Quote`].
+///
+/// This function correctly handles inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
+///
+/// # Errors
+///
+/// Returns an error on parsing failure.
 fn parse(response: &str) -> Result<Quote> {
     let fixed_response = response.replace("\\'", "'"); // i really hate this API
 
-    serde_json::from_str::<Quote>(&fixed_response).context("failed to serialize JSON")
+    serde_json::from_str::<Quote>(&fixed_response).context("failed to deserialize JSON")
 }
