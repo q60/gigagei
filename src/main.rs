@@ -1,11 +1,16 @@
-use anyhow::{Context, Result};
-use owo_colors::OwoColorize;
+#![doc = include_str!("../readme.md")]
+
+use anyhow::{Context as _, Result};
+use owo_colors::OwoColorize as _;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// quote structure
 struct Quote {
+    /// quote text
     quote_text: String,
+    /// quote author, may be absent
     quote_author: String,
 }
 
@@ -27,12 +32,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn parse(response: &str) -> Result<Quote> {
-    let fixed_response = response.replace("\\'", "'"); // i really hate this API
-
-    serde_json::from_str::<Quote>(&fixed_response).context("failed to serialize JSON")
-}
-
+/// performs GET request using [ureq] and possibly returns body as a [String].
 fn get_request(uri: &str) -> Result<String> {
     let mut response = ureq::get(uri).call().context("request error")?;
     let string = response
@@ -41,4 +41,11 @@ fn get_request(uri: &str) -> Result<String> {
         .context("failed to read response")?;
 
     Ok(string)
+}
+
+/// possibly serializes `response` (JSON string) into [Quote].
+fn parse(response: &str) -> Result<Quote> {
+    let fixed_response = response.replace("\\'", "'"); // i really hate this API
+
+    serde_json::from_str::<Quote>(&fixed_response).context("failed to serialize JSON")
 }
