@@ -3,7 +3,7 @@
 use anyhow::{Context as _, Result};
 use argh::FromArgs;
 use owo_colors::{OwoColorize as _, Style};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(FromArgs)]
 #[argh(help_triggers("-h", "--help", "help"))]
@@ -20,6 +20,10 @@ struct Args {
     /// disables colors
     #[argh(switch, short = 'n')]
     no_colors: bool,
+
+    /// return quote in JSON
+    #[argh(switch, short = 'j')]
+    json: bool,
 }
 
 impl Args {
@@ -55,13 +59,14 @@ impl Args {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Deserialize, Serialize)]
 /// Quote structure
 struct Quote {
-    /// Quote text
+    /// quote text
+    #[serde(rename(deserialize = "quoteText", serialize = "text"))]
     quote_text: String,
-    /// Quote author, may be absent
+    /// quote author, may be absent
+    #[serde(rename(deserialize = "quoteAuthor", serialize = "author"))]
     quote_author: String,
 }
 
@@ -76,21 +81,30 @@ fn main() -> Result<()> {
         format!("https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang={lang}");
 
     let response = get_request(&uri)?;
-    let quote = parse(&response)?;
+    let mut quote = deserialize(&response)?;
 
-    let text = textwrap::fill(quote.quote_text.trim(), 60);
-    let author = quote.quote_author.trim();
+    quote.quote_text = quote.quote_text.trim().to_string();
+    quote.quote_author = quote.quote_author.trim().to_string();
 
-    let text = if lang == "en" {
-        text.replace("\"", "'")
+    if args.json {
+        println!("{}", serialize(&quote)?);
     } else {
-        text
-    };
+        textwrap::fill_inplace(&mut quote.quote_text, 60);
 
-    println!("{left_quote}{}{right_quote}", text.style(text_style));
+        let text = quote.quote_text;
+        let author = quote.quote_author;
 
-    if !author.is_empty() {
-        println!("{}", author.style(author_style));
+        let text = if lang == "en" {
+            text.replace("\"", "'")
+        } else {
+            text
+        };
+
+        println!("{left_quote}{}{right_quote}", text.style(text_style));
+
+        if !author.is_empty() {
+            println!("{}", author.style(author_style));
+        }
     }
 
     Ok(())
@@ -118,8 +132,17 @@ fn get_request(uri: &str) -> Result<String> {
 /// # Errors
 ///
 /// Returns an error on parsing failure.
-fn parse(response: &str) -> Result<Quote> {
+fn deserialize(response: &str) -> Result<Quote> {
     let fixed_response = response.replace("\\'", "'"); // i really hate this API
 
     serde_json::from_str::<Quote>(&fixed_response).context("failed to deserialize JSON")
+}
+
+/// Serializes a [`Quote`] to a JSON string.
+///
+/// # Errors
+///
+/// Returns an error on parsing failure.
+fn serialize(quote: &Quote) -> Result<String> {
+    serde_json::to_string(quote).context("failed to serialize Quote")
 }
