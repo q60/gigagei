@@ -2,7 +2,7 @@
 
 use anyhow::{Context as _, Result};
 use argh::FromArgs;
-use owo_colors::OwoColorize;
+use owo_colors::{OwoColorize as _, Style};
 use serde::Deserialize;
 
 #[derive(FromArgs)]
@@ -16,9 +16,26 @@ struct Args {
     /// force ASCII quotation marks
     #[argh(switch, short = 'a')]
     ascii_quotation: bool,
+
+    /// disables colors
+    #[argh(switch, short = 'n')]
+    no_colors: bool,
 }
 
 impl Args {
+    /// Returns a tuple of styles to use on quote and its author.
+    fn get_colors(&self) -> (Style, Style) {
+        if self.no_colors {
+            let s = Style::new();
+            (s, s)
+        } else {
+            (
+                Style::new().bright_blue().bold(),
+                Style::new().bright_yellow(),
+            )
+        }
+    }
+
     /// Returns a language code from the `ascii_quotation` option.
     fn get_language(&self) -> &str {
         if self.language.to_lowercase().starts_with("en") {
@@ -52,6 +69,7 @@ fn main() -> Result<()> {
     let args: Args = argh::from_env();
 
     let lang = args.get_language();
+    let (text_style, author_style) = args.get_colors();
     let (left_quote, right_quote) = args.get_quotation_marks(lang);
 
     let uri =
@@ -69,10 +87,10 @@ fn main() -> Result<()> {
         text
     };
 
-    println!("{left_quote}{}{right_quote}", text.bright_blue().bold());
+    println!("{left_quote}{}{right_quote}", text.style(text_style));
 
     if !author.is_empty() {
-        println!("{}", author.bright_yellow());
+        println!("{}", author.style(author_style));
     }
 
     Ok(())
