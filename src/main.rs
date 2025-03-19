@@ -1,8 +1,17 @@
 #![doc = include_str!("../readme.md")]
 
 use anyhow::{Context as _, Result};
+use argh::FromArgs;
 use owo_colors::OwoColorize as _;
 use serde::Deserialize;
+
+#[derive(FromArgs)]
+/// A random quote fetching console utility
+struct Args {
+    /// quote language, must be one of: en\[glish\], ru\[ssian\]
+    #[argh(option, short = 'l')]
+    language: Option<String>,
+}
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,9 +24,9 @@ struct Quote {
 }
 
 fn main() -> Result<()> {
-    let uri = "https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang=en";
+    let uri = prepare_uri();
 
-    let response = get_request(uri)?;
+    let response = get_request(&uri)?;
     let quote = parse(&response)?;
 
     let text = textwrap::fill(quote.quote_text.trim(), 60);
@@ -58,4 +67,23 @@ fn parse(response: &str) -> Result<Quote> {
     let fixed_response = response.replace("\\'", "'"); // i really hate this API
 
     serde_json::from_str::<Quote>(&fixed_response).context("failed to deserialize JSON")
+}
+
+/// Returns API endpoint as a [`String`].
+///
+/// This function checks for command line arguments and uses supplied language option if specified. Constructs URI according to this option.
+fn prepare_uri() -> String {
+    let Args { language } = argh::from_env();
+
+    let lang = if language
+        .unwrap_or_default()
+        .to_lowercase()
+        .starts_with("ru")
+    {
+        "ru"
+    } else {
+        "en"
+    };
+
+    format!("https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang={lang}")
 }
