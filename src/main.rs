@@ -70,26 +70,52 @@ struct Quote {
     quote_author: String,
 }
 
+impl Quote {
+    /// Serializes a [`Quote`] to a JSON string.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error on parsing failure.
+    fn serialize(&self) -> Result<String> {
+        serde_json::to_string(self).context("failed to serialize Quote")
+    }
+
+    /// Deserializes a JSON representation of a [`Quote`].
+    ///
+    /// This function correctly handles inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error on parsing failure.
+    fn deserialize(response: &str) -> Result<Quote> {
+        let fixed_response = response.replace("\\'", "'"); // i really hate this API
+
+        serde_json::from_str::<Quote>(&fixed_response).context("failed to deserialize JSON")
+    }
+}
+
 fn main() -> Result<()> {
     let args: Args = argh::from_env();
 
     let lang = args.get_language();
-    let (text_style, author_style) = args.get_colors();
-    let (left_quote, right_quote) = args.get_quotation_marks(lang);
-
     let uri =
         format!("https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang={lang}");
 
     let response = get_request(&uri)?;
-    let mut quote = deserialize(&response)?;
+    let mut quote = Quote::deserialize(&response)?;
 
     quote.quote_text = quote.quote_text.trim().to_string();
     quote.quote_author = quote.quote_author.trim().to_string();
 
     if args.json {
-        println!("{}", serialize(&quote)?);
+        let json = quote.serialize()?;
+
+        println!("{}", json);
     } else {
         textwrap::fill_inplace(&mut quote.quote_text, 60);
+
+        let (text_style, author_style) = args.get_colors();
+        let (left_quote, right_quote) = args.get_quotation_marks(lang);
 
         let text = quote.quote_text;
         let author = quote.quote_author;
@@ -123,26 +149,4 @@ fn get_request(uri: &str) -> Result<String> {
         .context("failed to read response")?;
 
     Ok(string)
-}
-
-/// Deserializes a JSON representation of a [`Quote`].
-///
-/// This function correctly handles inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
-///
-/// # Errors
-///
-/// Returns an error on parsing failure.
-fn deserialize(response: &str) -> Result<Quote> {
-    let fixed_response = response.replace("\\'", "'"); // i really hate this API
-
-    serde_json::from_str::<Quote>(&fixed_response).context("failed to deserialize JSON")
-}
-
-/// Serializes a [`Quote`] to a JSON string.
-///
-/// # Errors
-///
-/// Returns an error on parsing failure.
-fn serialize(quote: &Quote) -> Result<String> {
-    serde_json::to_string(quote).context("failed to serialize Quote")
 }
