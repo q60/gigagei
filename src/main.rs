@@ -1,8 +1,42 @@
 #![doc = include_str!("../readme.md")]
 
 use anyhow::{Context as _, Result};
-use owo_colors::OwoColorize as _;
+use argh::FromArgs;
+use owo_colors::OwoColorize;
 use serde::Deserialize;
+
+#[derive(FromArgs)]
+#[argh(help_triggers("-h", "--help", "help"))]
+/// A random quote fetching console utility
+struct Args {
+    /// quote language, must be one of: en\[glish\], ru\[ssian\]
+    #[argh(option, short = 'l', default = "\"en\".to_string()")]
+    language: String,
+
+    /// force ASCII quotation marks
+    #[argh(switch, short = 'a')]
+    ascii_quotation: bool,
+}
+
+impl Args {
+    /// Returns a language code from the `ascii_quotation` option.
+    fn get_language(&self) -> &str {
+        if self.language.to_lowercase().starts_with("en") {
+            "en"
+        } else {
+            "ru"
+        }
+    }
+
+    /// Returns a tuple of quotation marks to use on quotes, considers `ascii_quotation` option and language.
+    fn get_quotation_marks(&self, lang: &str) -> (&str, &str) {
+        match (lang, self.ascii_quotation) {
+            ("en", true) | ("ru", true) => ("\"", "\""),
+            ("ru", false) => ("«", "»"),
+            _ => ("“", "”"),
+        }
+    }
+}
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,15 +49,27 @@ struct Quote {
 }
 
 fn main() -> Result<()> {
-    let uri = "https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang=en";
+    let args: Args = argh::from_env();
 
-    let response = get_request(uri)?;
+    let lang = args.get_language();
+    let (left_quote, right_quote) = args.get_quotation_marks(lang);
+
+    let uri =
+        format!("https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang={lang}");
+
+    let response = get_request(&uri)?;
     let quote = parse(&response)?;
 
     let text = textwrap::fill(quote.quote_text.trim(), 60);
     let author = quote.quote_author.trim();
 
-    println!("\"{}\"", text.bright_blue().bold());
+    let text = if lang == "en" {
+        text.replace("\"", "'")
+    } else {
+        text
+    };
+
+    println!("{left_quote}{}{right_quote}", text.bright_blue().bold());
 
     if !author.is_empty() {
         println!("{}", author.bright_yellow());
