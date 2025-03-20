@@ -1,5 +1,6 @@
+use anyhow::Error;
 use argh::FromArgs;
-use gigagei::{Quote, Result};
+use gigagei::{Backend, Quote};
 use owo_colors::{OwoColorize as _, Style};
 
 const GUILLEMETS: (&str, &str) = ("«", "»");
@@ -64,37 +65,34 @@ impl Args {
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Error> {
     let args: Args = argh::from_env();
 
-    let lang: &str = args.get_language();
+    let language: &str = args.get_language();
 
-    let mut quote_struct: Quote = gigagei::get_quote(lang)?;
+    let mut quote_struct: Quote = Backend::Forismatic { language }.get_quote_and_parse()?;
 
-    quote_struct.quote_text = quote_struct.quote_text.trim().to_string();
-    quote_struct.quote_author = quote_struct.quote_author.trim().to_string();
+    quote_struct.text = quote_struct.text.trim().to_string();
+    quote_struct.author = quote_struct.author.trim().to_string();
 
     if args.json {
-        let json: String = quote_struct.serialize()?;
+        let json: String = quote_struct.serialize_to_json()?;
 
         println!("{json}");
     } else {
-        let Quote {
-            mut quote_text,
-            quote_author,
-        } = quote_struct;
+        let Quote { mut text, author } = quote_struct;
 
-        textwrap::fill_inplace(&mut quote_text, args.wrap_width - 2);
+        textwrap::fill_inplace(&mut text, args.wrap_width - 2);
 
         let (text_style, author_style) = args.get_colors();
-        let (left_quote, right_quote) = args.get_quotation_marks(lang);
+        let (left_quote, right_quote) = args.get_quotation_marks(language);
 
-        quote_text = replace_quotations(&quote_text, lang);
+        text = replace_quotations(&text, language);
 
-        println!("{left_quote}{}{right_quote}", quote_text.style(text_style));
+        println!("{left_quote}{}{right_quote}", text.style(text_style));
 
-        if !quote_author.is_empty() {
-            println!("{}", quote_author.style(author_style));
+        if !author.is_empty() {
+            println!("{}", author.style(author_style));
         }
     }
 
@@ -102,8 +100,8 @@ fn main() -> Result<()> {
 }
 
 /// Returns new [`String`] with quotation marks replaced according to the language.
-fn replace_quotations(text: &str, lang: &str) -> String {
-    if lang == "ru" {
+fn replace_quotations(text: &str, language: &str) -> String {
+    if language == "ru" {
         text.replace(GUILLEMETS.0, GERMAN_QUOTES.0)
             .replace(GUILLEMETS.1, GERMAN_QUOTES.1)
     } else {
