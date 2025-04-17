@@ -7,12 +7,18 @@ repository = "https://github.com/q60/gigagei"
 license = "Unlicense"
 readme = "readme.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
 
 [dependencies]
 ureq = "3.0.10"
 serde = { version = "1.0.219", features = ["derive"] }
-textwrap = "0.16.2"
-anyhow = "1.0.97"
 serde_json = "1.0.140"
+textwrap = {version = "0.16.2", features = ["terminal_size"]}
+anyhow = "1.0.97"
 owo-colors = "4.2.0"
+argh = "0.1.13"
