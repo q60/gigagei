@@ -2,7 +2,7 @@
 
 **ᎩᎦᎨᎢ** (IPA: \[gigagei\]) is a random quote fetching console utility. Written in Rust.
 
-![screenshot](https://i.imgur.com/ZG1p7aX.png)
+![screenshot](https://i.imgur.com/TGvihR3.png)
 
 
 ## installing
