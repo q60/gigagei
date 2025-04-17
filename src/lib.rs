@@ -1,116 +1,59 @@
 #![doc = include_str!("../readme.md")]
 
-use anyhow::{Context as _, Result};
-use serde::{Deserialize, Serialize};
+pub mod cli;
+pub mod quote;
 
-/// Enumerates quotes backends.
-pub enum Backend<'a> {
-    /// Forismatic backend for quotes, provides quotes in English and Russian.
-    Forismatic { language: &'a str },
-}
+use anyhow::Error;
+use cli::Args;
+use owo_colors::OwoColorize as _;
+use quote::Backend;
+use quote::Quote;
 
-impl Backend<'_> {
-    /// Gets a quote from the API and deserializes it to a [`Quote`].
-    ///
-    /// This function replaces inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error in several cases:
-    ///
-    /// * GET request fails
-    /// * body cannot be parsed to a UTF-8 string
-    /// * fails at deserializing [`String`] to [`Quote`]
-    pub fn get_quote_and_parse(&self) -> Result<Quote> {
-        match self {
-            Self::Forismatic { language } => Forismatic::get_quote_and_parse(language),
+pub const GUILLEMETS: (&str, &str) = ("«", "»");
+pub const CURLY_QUOTES: (&str, &str) = ("“", "”");
+pub const GERMAN_QUOTES: (&str, &str) = ("„", "“");
+
+pub const FORISMATIC_URL: &str = "https://api.forismatic.com/api/1.0/?method=getQuote&format=json";
+
+/// Prints out the quote and it's author (if not absent) using [`Args`].
+pub fn get_quote_and_print(args: &Args) -> Result<(), Error> {
+    let language: &str = args.get_language();
+
+    let mut quote_struct: Quote = Backend::Forismatic { language }.get_quote_and_parse()?;
+
+    quote_struct.text = quote_struct.text.trim().to_string();
+    quote_struct.author = quote_struct.author.trim().to_string();
+
+    if args.json {
+        let json: String = quote_struct.serialize_to_json()?;
+
+        println!("{json}");
+    } else {
+        let Quote { mut text, author } = quote_struct;
+
+        textwrap::fill_inplace(&mut text, args.wrap_width - 2);
+
+        let (text_style, author_style) = args.get_colors();
+        let (left_quote, right_quote) = args.get_quotation_marks(language);
+
+        text = replace_quotations(&text, language);
+
+        println!("{left_quote}{}{right_quote}", text.style(text_style));
+
+        if !author.is_empty() {
+            println!("{}", author.style(author_style));
         }
     }
+
+    Ok(())
 }
 
-const FORISMATIC_URL: &str = "https://api.forismatic.com/api/1.0/?method=getQuote&format=json";
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// Forismatic API response structure.
-struct Forismatic {
-    /// quote text.
-    pub quote_text: String,
-
-    /// quote author, may be absent.
-    pub quote_author: String,
-}
-
-impl Forismatic {
-    /// Deserializes a JSON representation of a [`Quote`].
-    ///
-    /// # Errors
-    ///
-    /// Returns an error on parsing failure.
-    fn deserialize_from_json(response: &str) -> Result<Self> {
-        serde_json::from_str::<Self>(response).context("failed to deserialize JSON")
+/// Returns new [`String`] with quotation marks replaced according to the language.
+fn replace_quotations(text: &str, language: &str) -> String {
+    if language == "ru" {
+        text.replace(GUILLEMETS.0, GERMAN_QUOTES.0)
+            .replace(GUILLEMETS.1, GERMAN_QUOTES.1)
+    } else {
+        text.replace('"', "'")
     }
-
-    /// Gets a quote from the API and deserializes it to a [`Quote`].
-    ///
-    /// This function replaces inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error in several cases:
-    ///
-    /// * GET request fails
-    /// * body cannot be parsed to a UTF-8 string
-    /// * fails at deserializing [`String`] to [`Quote`]
-    pub fn get_quote_and_parse(lang: &str) -> Result<Quote> {
-        let uri = format!("{FORISMATIC_URL}&lang={lang}");
-
-        let response = request_get(&uri)?.replace("\\'", "'"); // i really hate this API
-
-        let Self {
-            quote_text,
-            quote_author,
-        } = Self::deserialize_from_json(&response)?;
-
-        Ok(Quote {
-            text: quote_text,
-            author: quote_author,
-        })
-    }
-}
-
-#[derive(Serialize)]
-/// Quote structure.
-pub struct Quote {
-    /// quote text.
-    pub text: String,
-
-    /// quote author.
-    pub author: String,
-}
-
-impl Quote {
-    /// Serializes a [`Quote`] to a JSON string.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error on parsing failure.
-    pub fn serialize_to_json(self) -> Result<String> {
-        serde_json::to_string(&self).context("failed to serialize Quote")
-    }
-}
-
-/// Performs a GET request using [`ureq`] and returns the body as a [`String`].
-///
-/// # Errors
-///
-/// Returns an error if the GET request fails or if the body cannot be parsed to a UTF-8 string.
-pub fn request_get(uri: &str) -> Result<String> {
-    let mut response = ureq::get(uri).call().context("request error")?;
-    let string = response
-        .body_mut()
-        .read_to_string()
-        .context("failed to read response")?;
-
-    Ok(string)
 }
