@@ -11,13 +11,30 @@
 + use provided flake
 
 
+## options
+
+```
+Usage: gigagei [-l <language>] [-a] [-n] [-j] [-w <wrap-width>]
+
+A random quote fetching console utility
+
+Options:
+  -l, --language    quote language, must be one of: en[glish], ru[ssian]
+  -a, --ascii-quotation
+                    force ASCII quotation marks
+  -n, --no-colors   disables colors
+  -j, --json        return quote in JSON
+  -w, --wrap-width  wrap width in characters, default is terminal width
+  -h, --help, help  display usage information
+```
+
+
 ## building and installing manually
 
-you need *GNU make* and *Rust* to build **ᎩᎦᎨᎢ**.
+you need *Rust* to build **ᎩᎦᎨᎢ**.
 
 ```sh
-make
-sudo make install
+cargo build --release
 ```
 
 
@@ -27,9 +44,3 @@ sudo make install
 gigagei
 ```
 
-
-## uninstalling
-
-```sh
-sudo make uninstall
-```
