@@ -13,7 +13,7 @@
 
 ## options
 
-```
+```text
 Usage: gigagei [-l <language>] [-a] [-n] [-j] [-w <wrap-width>]
 
 A random quote fetching console utility
