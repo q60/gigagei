@@ -14,15 +14,16 @@ pub const CURLY_QUOTES: (&str, &str) = ("“", "”");
 pub const GERMAN_QUOTES: (&str, &str) = ("„", "“");
 
 pub const FORISMATIC_URL: &str = "https://api.forismatic.com/api/1.0/?method=getQuote&format=json";
+pub const HAPESIRE_URL: &str = "https://hapesire.kira.computer/api/quotes/random";
 
 /// Prints out the quote and it's author (if not absent) using [`Args`].
 pub fn get_quote_and_print(args: &Args) -> Result<(), Error> {
     let language: &str = args.get_language();
 
-    let mut quote_struct: Quote = Backend::Forismatic { language }.get_quote_and_parse()?;
-
-    quote_struct.text = quote_struct.text.trim().to_string();
-    quote_struct.author = quote_struct.author.trim().to_string();
+    let quote_struct: Quote = match args.backend.to_lowercase().as_str() {
+        "forismatic" => Backend::Forismatic { language }.get_quote_and_parse()?,
+        "hapesire" | _ => Backend::Hapesire { language }.get_quote_and_parse()?,
+    };
 
     if args.json {
         let json: String = quote_struct.serialize_to_json()?;
@@ -40,7 +41,7 @@ pub fn get_quote_and_print(args: &Args) -> Result<(), Error> {
 
         println!("{left_quote}{}{right_quote}", text.style(text_style));
 
-        if !author.is_empty() {
+        if let Some(author) = author {
             println!("{}", author.style(author_style));
         }
     }
