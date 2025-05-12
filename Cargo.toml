@@ -1,6 +1,6 @@
 [package]
 name = "gigagei"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2018"
 description = "random quote fetching console utility"
 repository = "https://github.com/q60/gigagei"
