@@ -1,6 +1,7 @@
 //! Quotes API module.
 
 use super::FORISMATIC_URL;
+use super::HAPESIRE_URL;
 use anyhow::Context as _;
 use anyhow::Result;
 use serde::Deserialize;
@@ -10,6 +11,9 @@ use serde::Serialize;
 pub enum Backend<'a> {
     /// Forismatic backend for quotes, provides quotes in English and Russian.
     Forismatic { language: &'a str },
+
+    /// Forismatic backend for quotes, provides quotes in English and Russian.
+    Hapesire { language: &'a str },
 }
 
 impl Backend<'_> {
@@ -27,6 +31,7 @@ impl Backend<'_> {
     pub fn get_quote_and_parse(&self) -> Result<Quote> {
         match self {
             Self::Forismatic { language } => Forismatic::get_quote_and_parse(language),
+            Self::Hapesire { language } => Hapesire::get_quote_and_parse(language),
         }
     }
 }
@@ -36,22 +41,23 @@ impl Backend<'_> {
 /// Forismatic API response structure.
 struct Forismatic {
     /// quote text.
-    pub quote_text: String,
+    quote_text: String,
 
     /// quote author, may be absent.
-    pub quote_author: String,
+    quote_author: String,
+}
+
+#[derive(Deserialize)]
+struct Hapesire {
+    data: HapesireObject,
+}
+
+#[derive(Deserialize)]
+struct HapesireObject {
+    attributes: Quote,
 }
 
 impl Forismatic {
-    /// Deserializes a JSON representation of a [`Quote`].
-    ///
-    /// # Errors
-    ///
-    /// Returns an error on parsing failure.
-    fn deserialize_from_json(response: &str) -> Result<Self> {
-        serde_json::from_str::<Self>(response).context("failed to deserialize JSON")
-    }
-
     /// Gets a quote from the API and deserializes it to a [`Quote`].
     ///
     /// This function replaces inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
@@ -71,23 +77,53 @@ impl Forismatic {
         let Self {
             quote_text,
             quote_author,
-        } = Self::deserialize_from_json(&response)?;
+        } = serde_json::from_str::<Self>(&response).context("failed to deserialize JSON")?;
+
+        let text = quote_text.trim().to_string();
+        let author = quote_author.trim().to_string();
 
         Ok(Quote {
-            text: quote_text,
-            author: quote_author,
+            text,
+            author: if author.is_empty() {
+                None
+            } else {
+                Some(author)
+            },
         })
     }
 }
 
-#[derive(Serialize)]
+impl Hapesire {
+    /// Gets a quote from the API and deserializes it to a [`Quote`].
+    ///
+    /// This function replaces inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error in several cases:
+    ///
+    /// * GET request fails
+    /// * body cannot be parsed to a UTF-8 string
+    /// * fails at deserializing [`String`] to [`Quote`]
+    pub fn get_quote_and_parse(lang: &str) -> Result<Quote> {
+        let uri = format!("{HAPESIRE_URL}/{lang}");
+
+        let response = request_get(&uri)?;
+        let object =
+            serde_json::from_str::<Self>(&response).context("failed to deserialize JSON")?;
+
+        Ok(object.data.attributes)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 /// Quote structure.
 pub struct Quote {
     /// quote text.
     pub text: String,
 
     /// quote author.
-    pub author: String,
+    pub author: Option<String>,
 }
 
 impl Quote {

@@ -2,24 +2,27 @@
 
 **ᎩᎦᎨᎢ** (IPA: \[gigagei\]) is a random quote fetching console utility. Written in Rust.
 
-![screenshot](https://i.imgur.com/TGvihR3.png)
+![screenshot](https://github.com/user-attachments/assets/e4c1f7a0-e67e-42b7-91fe-81a1dc0f99d0)
 
 
 ## installing
 
 + use latest pre-built binary from [releases](https://github.com/q60/gigagei/releases)
-+ use provided flake
++ use via the flake
 
 
 ## options
 
 ```text
-Usage: gigagei [-l <language>] [-a] [-n] [-j] [-w <wrap-width>]
+Usage: gigagei [-b <backend>] [-l <language>] [-a] [-n] [-j] [-w <wrap-width>]
 
 A random quote fetching console utility
 
 Options:
-  -l, --language    quote language, must be one of: en[glish], ru[ssian]
+  -b, --backend     quote fetching API, must be one of: forismatic, hapesire.
+                    default is hapesire
+  -l, --language    quote language, must be one of: en[glish], ru[ssian].
+                    default is en
   -a, --ascii-quotation
                     force ASCII quotation marks
   -n, --no-colors   disables colors

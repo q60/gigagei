@@ -9,7 +9,11 @@ use owo_colors::Style;
 #[argh(help_triggers("-h", "--help", "help"))]
 /// A random quote fetching console utility
 pub struct Args {
-    /// quote language, must be one of: en\[glish\], ru\[ssian\]
+    /// quote fetching API, must be one of: forismatic, hapesire. default is hapesire
+    #[argh(option, short = 'b', default = "\"hapesire\".to_string()")]
+    pub backend: String,
+
+    /// quote language, must be one of: en\[glish\], ru\[ssian\]. default is en
     #[argh(option, short = 'l', default = "\"en\".to_string()")]
     pub language: String,
 
