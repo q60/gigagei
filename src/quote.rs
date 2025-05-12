@@ -58,15 +58,6 @@ struct HapesireObject {
 }
 
 impl Forismatic {
-    /// Deserializes a JSON representation of a [`Quote`].
-    ///
-    /// # Errors
-    ///
-    /// Returns an error on parsing failure.
-    fn deserialize_from_json(response: &str) -> Result<Self> {
-        serde_json::from_str::<Self>(response).context("failed to deserialize JSON")
-    }
-
     /// Gets a quote from the API and deserializes it to a [`Quote`].
     ///
     /// This function replaces inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
@@ -86,7 +77,7 @@ impl Forismatic {
         let Self {
             quote_text,
             quote_author,
-        } = Self::deserialize_from_json(&response)?;
+        } = serde_json::from_str::<Self>(&response).context("failed to deserialize JSON")?;
 
         let text = quote_text.trim().to_string();
         let author = quote_author.trim().to_string();
@@ -103,15 +94,6 @@ impl Forismatic {
 }
 
 impl Hapesire {
-    /// Deserializes a JSON representation of a [`Quote`].
-    ///
-    /// # Errors
-    ///
-    /// Returns an error on parsing failure.
-    fn deserialize_from_json(response: &str) -> Result<Self> {
-        serde_json::from_str::<Self>(response).context("failed to deserialize JSON")
-    }
-
     /// Gets a quote from the API and deserializes it to a [`Quote`].
     ///
     /// This function replaces inaccurately escaped apostrophes, which occur regularly in API responses from Forismatic.
@@ -127,11 +109,10 @@ impl Hapesire {
         let uri = format!("{HAPESIRE_URL}/{lang}");
 
         let response = request_get(&uri)?;
-        let object = Self::deserialize_from_json(&response)?;
+        let object =
+            serde_json::from_str::<Self>(&response).context("failed to deserialize JSON")?;
 
-        let quote = &object.data.attributes;
-
-        Ok(quote.clone())
+        Ok(object.data.attributes)
     }
 }
 
