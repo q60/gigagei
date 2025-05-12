@@ -1,5 +1,7 @@
 # ᎩᎦᎨᎢ ![rust](https://img.shields.io/badge/-Rust-DD3516?style=for-the-badge&logo=rust)
 
+[![Crates.io Version](https://img.shields.io/crates/v/gigagei?style=for-the-badge)](https://crates.io/crates/gigagei)
+
 **ᎩᎦᎨᎢ** (IPA: \[gigagei\]) is a random quote fetching console utility. Written in Rust.
 
 ![screenshot](https://github.com/user-attachments/assets/e4c1f7a0-e67e-42b7-91fe-81a1dc0f99d0)
@@ -7,8 +9,9 @@
 
 ## installing
 
-+ use latest pre-built binary from [releases](https://github.com/q60/gigagei/releases)
 + use via the flake
++ `cargo install gigagei`
++ use latest pre-built binary from [releases](https://github.com/q60/gigagei/releases)
 
 
 ## options
